@@ -15,6 +15,7 @@ interface Position {
   positionSize: string;
   portfolioPct: number;
   size: number;
+  symbol: string; // Add symbol for API calls
 }
 
 interface Balance {
@@ -41,6 +42,7 @@ export default function PortfolioPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [closingPosition, setClosingPosition] = useState<string | null>(null);
 
   // Fetch balance and positions from API
   useEffect(() => {
@@ -84,7 +86,8 @@ export default function PortfolioPage() {
                 currentPrice: currentPrice || entryPrice, // Fallback to entry if no current price
                 positionSize: `${size.toFixed(4)} ${pos.symbol.split('-')[0]}`,
                 portfolioPct: Math.min(25, Math.max(5, Math.abs(pnl / 100))), // Estimated portfolio %
-                size: size
+                size: size,
+                symbol: pos.symbol // Add original symbol for API calls
               };
             });
             setPositions(transformedPositions);
@@ -105,6 +108,51 @@ export default function PortfolioPage() {
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Close position handler
+  const handleClosePosition = async (positionId: string, symbol: string) => {
+    if (!confirm(`Are you sure you want to close your ${symbol.replace('-PERP', '')} position?`)) {
+      return;
+    }
+
+    try {
+      setClosingPosition(positionId);
+      
+      const response = await fetch('http://localhost:8000/api/close-position', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          symbol: symbol,
+          size: null // Close full position
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ Position closed successfully:', result.data);
+        
+        // Remove the position from the UI immediately for better UX
+        setPositions(prev => prev.filter(pos => pos.id !== positionId));
+        
+        // Refresh data after a short delay to get updated balance
+        setTimeout(() => {
+          window.location.reload(); // Simple refresh to get latest data
+        }, 1500);
+        
+      } else {
+        console.error('❌ Failed to close position:', result.error || result);
+        alert('Failed to close position: ' + (result.detail || result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('❌ Error closing position:', error);
+      alert('Error closing position. Please try again.');
+    } finally {
+      setClosingPosition(null);
+    }
+  };
 
   // Calculate totals
   const totalPnl = positions.reduce((sum, pos) => sum + pos.pnl, 0);
@@ -228,9 +276,20 @@ export default function PortfolioPage() {
                           <p className="text-white/80 text-xs font-medium">{pos.portfolioPct}%</p>
                         </div>
                       </div>
-                      <button className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all active:scale-95"
-                        style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)' }}>
-                        Close
+                      <button 
+                        onClick={() => handleClosePosition(pos.id, pos.symbol)}
+                        disabled={closingPosition === pos.id}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all active:scale-95 disabled:opacity-50"
+                        style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)' }}
+                      >
+                        {closingPosition === pos.id ? (
+                          <span className="flex items-center gap-1">
+                            <div className="w-3 h-3 border border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                            Closing...
+                          </span>
+                        ) : (
+                          'Close'
+                        )}
                       </button>
                     </div>
 
