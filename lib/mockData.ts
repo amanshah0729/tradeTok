@@ -29,8 +29,8 @@ export const MOCK_POSTS: TradePost[] = [
     },
     caption: 'ETH rejection at key resistance. Bears taking control — watching for breakdown below $3,300. Tight stop, high reward.',
     chartColor: {
-      from: '#071520',
-      to: '#0a2a3a',
+      from: '#0d0008',
+      to: '#200015',
       candleUp: '#22c55e',
       candleDown: '#ef4444',
     },
