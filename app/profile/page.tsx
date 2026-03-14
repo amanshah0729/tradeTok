@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import TabBar from '@/components/TabBar';
+import { videoPath } from '@/lib/mockData';
 
 const POSTS = [
   {
     id: 'post-1',
-    videoSrc: '/videos/post-1.MP4',
+    videoSrc: videoPath('post-1.MP4'),
     ticker: 'ETH',
     direction: 'SHORT' as const,
     pnlPct: -2.1,
@@ -14,7 +15,7 @@ const POSTS = [
   },
   {
     id: 'post-2',
-    videoSrc: '/videos/post-2.MP4',
+    videoSrc: videoPath('post-2.MP4'),
     ticker: 'BTC',
     direction: 'LONG' as const,
     pnlPct: 19.4,

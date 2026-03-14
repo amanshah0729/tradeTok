@@ -1,5 +1,11 @@
 import { TradePost } from '@/types/trade';
 
+/** Use .MP4 to match deployed files (Vercel/Linux is case-sensitive). */
+export function videoPath(filename: string): string {
+  const base = filename.replace(/\.(mp4|MP4)$/i, '');
+  return `/videos/${base}.MP4`;
+}
+
 export const MOCK_POSTS: TradePost[] = [
   {
     id: 'post-1',
@@ -35,7 +41,7 @@ export const MOCK_POSTS: TradePost[] = [
       candleDown: '#ef4444',
     },
     postedAt: '2h ago',
-    videoSrc: '/videos/post-1.MP4',
+    videoSrc: videoPath('post-1.MP4'),
   },
   {
     id: 'post-2',
@@ -71,7 +77,7 @@ export const MOCK_POSTS: TradePost[] = [
       candleDown: '#f87171',
     },
     postedAt: '5h ago',
-    videoSrc: '/videos/post-2.MP4',
+    videoSrc: videoPath('post-2.MP4'),
   },
   {
     id: 'post-3',
@@ -107,7 +113,7 @@ export const MOCK_POSTS: TradePost[] = [
       candleDown: '#f472b6',
     },
     postedAt: '1d ago',
-    videoSrc: '/videos/post-3.mp4',
+    videoSrc: videoPath('post-3.mp4'),
   },
 ];
 
