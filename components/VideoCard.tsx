@@ -7,6 +7,7 @@ import TopBar from './TopBar';
 import TradeInfoCard from './TradeInfoCard';
 import ActionRail from './ActionRail';
 import TraderInfo from './TraderInfo';
+import CommentsSheet from './CommentsSheet';
 
 interface VideoCardProps {
   post: TradePost;
@@ -17,7 +18,10 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
   { post, isActive },
   ref
 ) {
-  const [showCopyAnim, setShowCopyAnim] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [localLikes, setLocalLikes] = useState(post.social.likes);
+  const [showLikeAnim, setShowLikeAnim] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -30,19 +34,29 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
     }
   }, [isActive]);
 
-  const handleCopy = useCallback(() => {
-    console.log('Copying trade:', post.trade);
-    setShowCopyAnim(true);
-    setTimeout(() => setShowCopyAnim(false), 800);
-  }, [post.trade]);
+  const handleLike = useCallback(() => {
+    setLiked((prev) => {
+      const next = !prev;
+      setLocalLikes((c) => c + (next ? 1 : -1));
+      return next;
+    });
+  }, []);
+
+  const handleDoubleTap = useCallback(() => {
+    // Always like on double-tap (never unlike)
+    if (!liked) {
+      setLiked(true);
+      setLocalLikes((c) => c + 1);
+    }
+    setShowLikeAnim(true);
+    setTimeout(() => setShowLikeAnim(false), 1300);
+  }, [liked]);
 
   return (
     <div
       ref={ref}
-      // snap-start snap-always replaces .feed-card scroll-snap rules
-      // h-dvh = 100dvh, relative + overflow-hidden for absolute children
       className="snap-start snap-always h-dvh relative overflow-hidden"
-      onDoubleClick={handleCopy}
+      onDoubleClick={handleDoubleTap}
     >
       {/* Background layer */}
       {post.videoSrc ? (
@@ -80,14 +94,58 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
 
       <TopBar />
       <TradeInfoCard trade={post.trade} />
-      <ActionRail social={post.social} onCopy={handleCopy} />
+      <ActionRail
+        social={post.social}
+        liked={liked}
+        localLikes={localLikes}
+        onLike={handleLike}
+        onCommentClick={() => setShowComments(true)}
+      />
       <TraderInfo trader={post.trader} caption={post.caption} />
 
-      {showCopyAnim && (
-        <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center">
-          <span className="text-8xl animate-ping">📈</span>
+      {/* Double-tap like + order placed animation */}
+      {showLikeAnim && (
+        <div className="absolute inset-0 z-40 pointer-events-none">
+          {/* Big heart burst in center */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <svg
+              width="130"
+              height="130"
+              viewBox="0 0 24 24"
+              fill="#ff2d78"
+              style={{ animation: 'heartBurst 0.9s ease-out forwards', filter: 'drop-shadow(0 0 20px rgba(255,45,120,0.8))' }}
+            >
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </div>
+
+          {/* Order placed pill */}
+          <div
+            className="absolute bottom-36 left-0 right-0 flex justify-center"
+            style={{ animation: 'slideUpFade 1.3s ease-out forwards' }}
+          >
+            <div
+              className="flex items-center gap-2 px-6 py-3 rounded-full text-white font-bold text-base"
+              style={{
+                background: 'linear-gradient(135deg, #ff2d78, #c41760)',
+                boxShadow: '0 4px 24px rgba(255,45,120,0.55)',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Order Placed
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Comments sheet */}
+      <CommentsSheet
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+        commentCount={post.social.comments}
+      />
     </div>
   );
 });
