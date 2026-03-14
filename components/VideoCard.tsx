@@ -112,7 +112,7 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
               width="130"
               height="130"
               viewBox="0 0 24 24"
-              fill="#ff2d78"
+              fill="#FF1493"
               style={{ animation: 'heartBurst 0.9s ease-out forwards', filter: 'drop-shadow(0 0 20px rgba(255,20,147,0.8))' }}
             >
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -127,8 +127,8 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
             <div
               className="flex items-center gap-2 px-6 py-3 rounded-full text-white font-bold text-base"
               style={{
-                background: 'linear-gradient(135deg, #ff2d78, #c41760)',
-                boxShadow: '0 4px 24px rgba(255,45,120,0.55)',
+                background: 'linear-gradient(135deg, #FF1493, #cc0070)',
+                boxShadow: '0 4px 24px rgba(255,20,147,0.55)',
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">

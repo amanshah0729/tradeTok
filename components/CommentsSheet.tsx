@@ -54,7 +54,7 @@ export default function CommentsSheet({ isOpen, onClose, commentCount }: Comment
             <div key={c.id} className="flex gap-3">
               <div
                 className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
-                style={{ background: 'linear-gradient(135deg, #ff2d78, #9b1fcc)' }}
+                style={{ background: 'linear-gradient(135deg, #FF1493, #cc0070)' }}
               >
                 {c.user[0].toUpperCase()}
               </div>
@@ -65,7 +65,7 @@ export default function CommentsSheet({ isOpen, onClose, commentCount }: Comment
                 </div>
                 <p className="text-white/80 text-sm mt-0.5 leading-snug">{c.text}</p>
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  <button className="text-white/30 hover:text-[#ff2d78] transition-colors">
+                  <button className="text-white/30 hover:text-[#FF1493] transition-colors">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                     </svg>
@@ -82,7 +82,7 @@ export default function CommentsSheet({ isOpen, onClose, commentCount }: Comment
           <div className="flex-1 bg-white/8 rounded-full px-4 py-2.5 text-white/40 text-sm">
             Add a comment...
           </div>
-          <button className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#ff2d78' }}>
+          <button className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#FF1493' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
