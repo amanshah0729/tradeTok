@@ -22,6 +22,8 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
   const [localLikes, setLocalLikes] = useState(post.social.likes);
   const [showLikeAnim, setShowLikeAnim] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [realFundingRate, setRealFundingRate] = useState<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -34,6 +36,24 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
     }
   }, [isActive]);
 
+  // Fetch real funding rate for BTC posts
+  useEffect(() => {
+    if (post.trade.ticker === 'BTC' && isActive) {
+      const fetchFundingRate = async () => {
+        try {
+          const response = await fetch('http://localhost:8000/api/ticker/BTC-PERP');
+          const data = await response.json();
+          if (data.success && data.data.funding_rate !== null) {
+            setRealFundingRate(data.data.funding_rate);
+          }
+        } catch (error) {
+          console.error('Failed to fetch funding rate:', error);
+        }
+      };
+      fetchFundingRate();
+    }
+  }, [post.trade.ticker, isActive]);
+
   const handleLike = useCallback(() => {
     setLiked((prev) => {
       const next = !prev;
@@ -42,15 +62,54 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
     });
   }, []);
 
-  const handleDoubleTap = useCallback(() => {
+  const handleDoubleTap = useCallback(async () => {
     // Always like on double-tap (never unlike)
     if (!liked) {
       setLiked(true);
       setLocalLikes((c) => c + 1);
     }
     setShowLikeAnim(true);
+    
+    // Place order if this is the BTC post
+    if (post.id === 'post-2' && post.trade.ticker === 'BTC') {
+      setPlacingOrder(true);
+      try {
+        const orderData = {
+          symbol: 'BTC-PERP',
+          side: post.trade.direction === 'LONG' ? 'buy' : 'sell',
+          type: 'market',
+          size: 15, // $15 USD position
+          leverage: 1,
+          take_profit: post.trade.target,  // Use the target price from the post
+          stop_loss: post.trade.stopLoss   // Use the stop loss from the post
+        };
+
+        console.log('Placing order:', orderData);
+        
+        const response = await fetch('http://localhost:8000/api/place-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('✅ Order placed successfully:', result.data);
+        } else {
+          console.error('❌ Order failed:', result.error || result);
+        }
+      } catch (error) {
+        console.error('❌ Order placement error:', error);
+      } finally {
+        setPlacingOrder(false);
+      }
+    }
+    
     setTimeout(() => setShowLikeAnim(false), 1300);
-  }, [liked]);
+  }, [liked, post]);
 
   return (
     <div
@@ -93,7 +152,7 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
       />
 
       <TopBar />
-      <TradeInfoCard trade={post.trade} />
+      <TradeInfoCard trade={post.trade} realFundingRate={realFundingRate} />
       <ActionRail
         social={post.social}
         liked={liked}
@@ -127,14 +186,30 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
             <div
               className="flex items-center gap-2 px-6 py-3 rounded-full text-white font-bold text-base"
               style={{
-                background: 'linear-gradient(135deg, #FF1493, #cc0070)',
-                boxShadow: '0 4px 24px rgba(255,20,147,0.55)',
+                background: placingOrder ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'linear-gradient(135deg, #FF1493, #cc0070)',
+                boxShadow: placingOrder ? '0 4px 24px rgba(59,130,246,0.55)' : '0 4px 24px rgba(255,20,147,0.55)',
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Order Placed
+              {placingOrder ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Placing Order...
+                </>
+              ) : post.id === 'post-2' && post.trade.ticker === 'BTC' ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  $15 BTC Order Placed
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Order Placed
+                </>
+              )}
             </div>
           </div>
         </div>

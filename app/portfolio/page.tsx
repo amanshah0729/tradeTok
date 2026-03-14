@@ -1,45 +1,28 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import TabBar from '@/components/TabBar';
 
-const POSITIONS = [
-  {
-    id: 1,
-    pair: 'BTC/USDT',
-    direction: 'LONG' as const,
-    leverage: 10,
-    pnl: 1247.80,
-    pnlPct: 19.4,
-    entryPrice: 64250,
-    currentPrice: 76750,
-    positionSize: '0.5 BTC',
-    portfolioPct: 15,
-  },
-  {
-    id: 2,
-    pair: 'ETH/USDT',
-    direction: 'LONG' as const,
-    leverage: 5,
-    pnl: 520.00,
-    pnlPct: 7.6,
-    entryPrice: 3420,
-    currentPrice: 3680,
-    positionSize: '2.0 ETH',
-    portfolioPct: 12,
-  },
-  {
-    id: 3,
-    pair: 'SOL/USDT',
-    direction: 'SHORT' as const,
-    leverage: 3,
-    pnl: -85.50,
-    pnlPct: -4.0,
-    entryPrice: 142.50,
-    currentPrice: 148.20,
-    positionSize: '15 SOL',
-    portfolioPct: 8,
-  },
-];
+interface Position {
+  id: string;
+  pair: string;
+  direction: 'LONG' | 'SHORT';
+  leverage: number;
+  pnl: number;
+  pnlPct: number;
+  entryPrice: number;
+  currentPrice: number;
+  positionSize: string;
+  portfolioPct: number;
+  size: number;
+}
+
+interface Balance {
+  equity: number;
+  available_balance: number;
+  margin_used: number;
+  margin_utilization_percent: number;
+}
 
 function formatPrice(n: number) {
   if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -55,9 +38,78 @@ function priceProgress(entry: number, current: number, isLong: boolean): number 
 }
 
 export default function PortfolioPage() {
-  const totalValue   = 12847.50;
-  const totalPnl     = 2847.30;
-  const totalPnlPct  = 28.5;
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [balance, setBalance] = useState<Balance | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch balance and positions from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch balance and positions concurrently
+        const [balanceRes, positionsRes] = await Promise.all([
+          fetch('http://localhost:8000/api/balance'),
+          fetch('http://localhost:8000/api/positions')
+        ]);
+
+        if (balanceRes.ok) {
+          const balanceData = await balanceRes.json();
+          if (balanceData.success) {
+            setBalance(balanceData.data);
+          }
+        }
+
+        if (positionsRes.ok) {
+          const positionsData = await positionsRes.json();
+          if (positionsData.success && positionsData.data.positions && positionsData.data.positions.length > 0) {
+            // Transform API data to match our Position interface
+            const transformedPositions: Position[] = positionsData.data.positions.map((pos: any, index: number) => {
+              const size = Math.abs(parseFloat(pos.size));
+              const isLong = pos.side === 'long';
+              const entryPrice = parseFloat(pos.entry_price);
+              const currentPrice = parseFloat(pos.current_price);
+              const pnl = parseFloat(pos.pnl || 0);
+              const pnlPct = parseFloat(pos.pnl_percentage || 0);
+              
+              return {
+                id: `${pos.symbol}-${index}`,
+                pair: pos.symbol.replace('-PERP', '/USDT'),
+                direction: isLong ? 'LONG' : 'SHORT',
+                leverage: 1, // Default leverage (API doesn't provide this)
+                pnl: pnl,
+                pnlPct: pnlPct,
+                entryPrice: entryPrice,
+                currentPrice: currentPrice || entryPrice, // Fallback to entry if no current price
+                positionSize: `${size.toFixed(4)} ${pos.symbol.split('-')[0]}`,
+                portfolioPct: Math.min(25, Math.max(5, Math.abs(pnl / 100))), // Estimated portfolio %
+                size: size
+              };
+            });
+            setPositions(transformedPositions);
+          } else {
+            setPositions([]); // No positions
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch portfolio data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate totals
+  const totalPnl = positions.reduce((sum, pos) => sum + pos.pnl, 0);
+  const totalValue = balance?.equity || 0;
+  const totalPnlPct = totalValue > 0 ? (totalPnl / totalValue) * 100 : 0;
 
   return (
     <div className="fixed inset-0 bg-black flex justify-center">
@@ -71,22 +123,48 @@ export default function PortfolioPage() {
               <p className="text-white/40 text-xs uppercase tracking-widest">Open Positions</p>
               <div className="flex items-baseline justify-between">
                 <p className="text-white text-3xl font-bold tracking-tight">
-                  ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  {loading ? (
+                    <span className="text-white/50">Loading...</span>
+                  ) : (
+                    `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                  )}
                 </p>
-                <span className="text-xs font-semibold px-2 py-1 rounded-full"
-                  style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80' }}>
-                  +{totalPnlPct}% · +${totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </span>
+                {!loading && (
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                    totalPnl >= 0 
+                      ? 'text-green-400' 
+                      : 'text-red-400'
+                  }`}
+                  style={{ 
+                    background: totalPnl >= 0 
+                      ? 'rgba(34,197,94,0.12)' 
+                      : 'rgba(248,113,113,0.12)' 
+                  }}>
+                    {totalPnl >= 0 ? '+' : ''}{totalPnlPct.toFixed(1)}% · {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1.5 pt-0.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                <span className="text-white/40 text-xs">$4,210.00 cash available</span>
+                <span className="text-white/40 text-xs">
+                  ${loading ? '...' : (balance?.available_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} cash available
+                </span>
               </div>
             </div>
 
             {/* Position cards */}
             <div className="space-y-3">
-              {POSITIONS.map((pos) => {
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-white/50 text-sm">Loading positions...</div>
+                </div>
+              ) : positions.length === 0 ? (
+                <div className="rounded-2xl p-6 text-center" style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <p className="text-white/60 text-sm">No open positions</p>
+                  <p className="text-white/40 text-xs mt-1">Start trading to see your positions here</p>
+                </div>
+              ) : (
+                positions.map((pos) => {
                 const isProfit = pos.pnl >= 0;
                 const isLong   = pos.direction === 'LONG';
                 const progress = priceProgress(pos.entryPrice, pos.currentPrice, isLong);
@@ -158,7 +236,8 @@ export default function PortfolioPage() {
 
                   </div>
                 );
-              })}
+              })
+              )}
             </div>
 
             <div className="h-4" />

@@ -22,13 +22,15 @@ function StatItem({ label, value, subValue, subColor }: StatItemProps) {
 
 interface TradeInfoCardProps {
   trade: TradeDetails;
+  realFundingRate?: number | null;
 }
 
-export default function TradeInfoCard({ trade }: TradeInfoCardProps) {
+export default function TradeInfoCard({ trade, realFundingRate }: TradeInfoCardProps) {
   const isLong = trade.direction === 'LONG';
   const targetPct = pctChange(trade.entry, trade.target);
   const stopPct = pctChange(trade.entry, trade.stopLoss);
-  const fundingPositive = trade.funding >= 0;
+  const fundingRate = realFundingRate !== null && realFundingRate !== undefined ? realFundingRate : trade.funding;
+  const fundingPositive = fundingRate >= 0;
 
   return (
     <div className="absolute bottom-20 left-3 right-20 z-20">
@@ -62,7 +64,7 @@ export default function TradeInfoCard({ trade }: TradeInfoCardProps) {
         {/* Row 2: Risk pill */}
         <div className="flex items-center">
           <span className="px-3 py-1 rounded-full bg-white/8 text-xs text-white/70 font-medium border border-white/10">
-            Risk: {trade.risk}% of portfolio
+            {trade.risk < 1 ? `$${Math.round(trade.risk * 100)} position` : `Risk: ${trade.risk}% of portfolio`}
           </span>
         </div>
 
@@ -86,7 +88,8 @@ export default function TradeInfoCard({ trade }: TradeInfoCardProps) {
           />
           <StatItem
             label="Funding"
-            value={`${fundingPositive ? '+' : ''}${(trade.funding * 100).toFixed(3)}%`}
+            value={`${fundingPositive ? '+' : ''}${(fundingRate * 100).toFixed(6)}%`}
+            subValue={realFundingRate !== null && realFundingRate !== undefined ? 'Live rate' : undefined}
             subColor={fundingPositive ? 'text-green' : 'text-red'}
           />
         </div>

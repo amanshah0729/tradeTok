@@ -157,6 +157,28 @@ async def get_positions():
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+@app.get("/api/ticker/{symbol}")
+async def get_ticker(symbol: str):
+    """Get ticker data including funding rate for a symbol"""
+    try:
+        client = get_client()
+        ticker = client.get_ticker(symbol)
+        
+        return {
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "mark_price": float(ticker.mark_price),
+                "funding_rate": getattr(ticker, 'funding_rate', None),
+                "volume_24h": getattr(ticker, 'volume_24h', None),
+                "change_24h": getattr(ticker, 'change_24h', None)
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @app.post("/api/place-order")
 async def place_order(order: OrderRequest):
     """Place a trading order"""

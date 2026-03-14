@@ -50,8 +50,8 @@ export const MOCK_POSTS: TradePost[] = [
     trade: {
       ticker: 'BTC',
       direction: 'LONG',
-      leverage: 3,
-      risk: 1.5,
+      leverage: 1, // Updated to 1x leverage
+      risk: 0.15, // Updated to reflect $15 USD position (roughly 0.15% of a $10k account)
       entry: 67850.00,
       target: 72400.00,
       stopLoss: 65200.00,
@@ -63,7 +63,7 @@ export const MOCK_POSTS: TradePost[] = [
       shares: 3400,
       bookmarks: 2100,
     },
-    caption: 'BTC weekly close above $67K is the signal we needed. Accumulating here with a tight structure. Next stop $72K.',
+    caption: 'BTC weekly close above $67K is the signal we needed. Small $15 position with 1x leverage — perfect for beginners. Next stop $72K.',
     chartColor: {
       from: '#0a1a0a',
       to: '#0a3a1a',
