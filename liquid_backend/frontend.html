@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquid Trading Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .danger {
+            background-color: #dc3545;
+        }
+        .danger:hover {
+            background-color: #c82333;
+        }
+        .success {
+            background-color: #28a745;
+        }
+        .success:hover {
+            background-color: #218838;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .output {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .status.online {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.offline {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Liquid Trading Dashboard</h1>
+        <div id="status" class="status offline">Server: Checking...</div>
+    </div>
+
+    <div class="grid">
+        <!-- Account & Market Info -->
+        <div class="card">
+            <h2>📊 Account & Market Info</h2>
+            <div class="button-group">
+                <button onclick="getBalance()">💼 Get Balance</button>
+                <button onclick="getPositions()">📍 Get Positions</button>
+                <button onclick="checkMarket()">📈 Check BTC Market</button>
+                <button onclick="getMarkets()">📋 All Markets</button>
+            </div>
+            <div id="infoOutput" class="output">Click a button to fetch data...</div>
+        </div>
+
+        <!-- Trading Operations -->
+        <div class="card">
+            <h2>⚡ Trading Operations</h2>
+            
+            <h3>Place Order</h3>
+            <div class="form-group">
+                <label>Symbol:</label>
+                <select id="orderSymbol">
+                    <option value="BTC-PERP">BTC-PERP</option>
+                    <option value="ETH-PERP">ETH-PERP</option>
+                    <option value="ADA-PERP">ADA-PERP</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Side:</label>
+                <select id="orderSide">
+                    <option value="buy">Buy</option>
+                    <option value="sell">Sell</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Type:</label>
+                <select id="orderType">
+                    <option value="market">Market</option>
+                    <option value="limit">Limit</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Size (USD):</label>
+                <input type="number" id="orderSize" value="25" min="10" step="5">
+            </div>
+            <div class="form-group">
+                <label>Price (for limit orders):</label>
+                <input type="number" id="orderPrice" placeholder="Optional" step="0.01">
+            </div>
+            
+            <div class="button-group">
+                <button class="danger" onclick="placeOrder()">🔥 Place Order</button>
+            </div>
+
+            <h3>Close Positions</h3>
+            <div class="form-group">
+                <label>Symbol to Close:</label>
+                <input type="text" id="closeSymbol" value="BTC-PERP" placeholder="e.g., BTC-PERP">
+            </div>
+            
+            <div class="button-group">
+                <button class="danger" onclick="closePosition()">❌ Close Position</button>
+                <button class="danger" onclick="closeAllPositions()">💥 Close All Positions</button>
+            </div>
+
+            <div id="tradingOutput" class="output">Trading operations will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        // Check server status on load
+        window.onload = function() {
+            checkServerStatus();
+        };
+
+        async function checkServerStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = `Server: ${data.status} (${data.service})`;
+                statusEl.className = 'status online';
+            } catch (error) {
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = 'Server: Offline - Make sure trading_server.py is running';
+                statusEl.className = 'status offline';
+            }
+        }
+
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'API request failed');
+                }
+                
+                return data;
+            } catch (error) {
+                throw new Error(`API Error: ${error.message}`);
+            }
+        }
+
+        function displayOutput(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function getBalance() {
+            try {
+                const data = await apiCall('/api/balance');
+                displayOutput('infoOutput', data);
+            } catch (error) {
+                displayOutput('infoOutput', { error: error.message });
+            }
+        }
+
+        async function getPositions() {
+            try {
+                const data = await apiCall('/api/positions');
+                displayOutput('infoOutput', data);
+            } catch (error) {
+                displayOutput('infoOutput', { error: error.message });
+            }
+        }
+
+        async function checkMarket() {
+            try {
+                const symbol = document.getElementById('orderSymbol').value;
+                const data = await apiCall(`/api/market/${symbol}`);
+                displayOutput('infoOutput', data);
+            } catch (error) {
+                displayOutput('infoOutput', { error: error.message });
+            }
+        }
+
+        async function getMarkets() {
+            try {
+                const data = await apiCall('/api/markets');
+                displayOutput('infoOutput', data);
+            } catch (error) {
+                displayOutput('infoOutput', { error: error.message });
+            }
+        }
+
+        async function placeOrder() {
+            const confirmation = confirm('⚠️ WARNING: This will place a REAL order with REAL money! Are you sure?');
+            if (!confirmation) return;
+
+            try {
+                const orderData = {
+                    symbol: document.getElementById('orderSymbol').value,
+                    side: document.getElementById('orderSide').value,
+                    type: document.getElementById('orderType').value,
+                    size: parseFloat(document.getElementById('orderSize').value),
+                    leverage: 1
+                };
+
+                const price = document.getElementById('orderPrice').value;
+                if (price && orderData.type === 'limit') {
+                    orderData.price = parseFloat(price);
+                }
+
+                const data = await apiCall('/api/place-order', 'POST', orderData);
+                displayOutput('tradingOutput', data);
+            } catch (error) {
+                displayOutput('tradingOutput', { error: error.message });
+            }
+        }
+
+        async function closePosition() {
+            const confirmation = confirm('⚠️ WARNING: This will close your position! Are you sure?');
+            if (!confirmation) return;
+
+            try {
+                const symbol = document.getElementById('closeSymbol').value;
+                const data = await apiCall('/api/close-position', 'POST', { symbol });
+                displayOutput('tradingOutput', data);
+            } catch (error) {
+                displayOutput('tradingOutput', { error: error.message });
+            }
+        }
+
+        async function closeAllPositions() {
+            const confirmation = confirm('🚨 WARNING: This will close ALL your positions! Are you absolutely sure?');
+            if (!confirmation) return;
+
+            try {
+                const data = await apiCall('/api/close-all-positions', 'POST');
+                displayOutput('tradingOutput', data);
+            } catch (error) {
+                displayOutput('tradingOutput', { error: error.message });
+            }
+        }
+
+        // Auto-refresh status every 30 seconds
+        setInterval(checkServerStatus, 30000);
+    </script>
+</body>
+</html>
