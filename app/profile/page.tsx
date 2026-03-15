@@ -7,7 +7,7 @@ import { videoPath } from '@/lib/mockData';
 const POSTS = [
   {
     id: 'post-1',
-    videoSrc: videoPath('post-1.MP4'),
+    videoSrc: videoPath('post-1.mp4'),
     ticker: 'ETH',
     direction: 'SHORT' as const,
     pnlPct: -2.1,
@@ -15,7 +15,7 @@ const POSTS = [
   },
   {
     id: 'post-2',
-    videoSrc: videoPath('post-2.MP4'),
+    videoSrc: videoPath('post-2.mp4'),
     ticker: 'BTC',
     direction: 'LONG' as const,
     pnlPct: 19.4,
