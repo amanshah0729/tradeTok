@@ -114,7 +114,7 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
   return (
     <div
       ref={ref}
-      className="snap-start snap-always h-dvh relative overflow-hidden"
+      className="snap-start snap-always h-full relative overflow-hidden"
       onDoubleClick={handleDoubleTap}
     >
       {/* Background layer */}
@@ -125,7 +125,6 @@ const VideoCard = forwardRef<HTMLDivElement, VideoCardProps>(function VideoCard(
           className="absolute inset-0 w-full h-full object-cover"
           autoPlay
           loop
-          muted
           playsInline
           preload="auto"
         />
