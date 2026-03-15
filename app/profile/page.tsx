@@ -28,6 +28,7 @@ const STATS = [
   { label: 'Total Trades',  value: '142'     },
   { label: 'Avg Leverage',  value: '6.2x'   },
   { label: 'Best Trade',    value: '+$3,840' },
+  { label: 'Commission Earned', value: '+$847' },
 ];
 
 type ModalType = 'deposit' | 'withdraw' | null;
@@ -298,13 +299,21 @@ export default function ProfilePage() {
             <div className="mx-5 mt-5 rounded-2xl p-4"
               style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.07)' }}>
               <p className="text-white/50 text-[10px] font-semibold uppercase tracking-widest mb-3">Trading Stats</p>
-              <div className="grid grid-cols-2 gap-3">
-                {STATS.map((s) => (
+              
+              {/* Other stats in 2x2 grid */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {STATS.slice(0, 4).map((s) => (
                   <div key={s.label} className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
                     <p className="text-white/40 text-[10px] mb-0.5">{s.label}</p>
                     <p className="text-white font-bold text-base">{s.value}</p>
                   </div>
                 ))}
+              </div>
+
+              {/* Commission stat full width at bottom */}
+              <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.25)' }}>
+                <p className="text-green-400 text-[10px] mb-0.5 uppercase tracking-wider font-semibold">{STATS[4].label}</p>
+                <p className="text-green-400 font-bold text-xl">{STATS[4].value}</p>
               </div>
             </div>
 
